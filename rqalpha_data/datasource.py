@@ -151,9 +151,94 @@ class DataSource(DataProxy):
 
 datasource = DataSource()
 
+def available_data_range(frequency='1d'):
+    return datasource.available_data_range(frequency)
+
+def get_trading_dates(start_date, end_date):
+    return datasource.get_trading_dates(start_date, end_date)
+
+def get_next_trading_date(date, n=1):
+    return datasource.get_next_trading_date(date, n)
 
 def is_trading_date(date):
     datasource.is_trading_date(date)
+
+num_secs_listed = None
+def get_num_secs_listed(dts,types=['CS']):
+    global num_secs_listed
+    fname = os.path.split(__file__)[0]+'/num_secs_listed.xlsx'
+    if num_secs_listed is None:
+        print('\nloading num_secs_listed.xlsx...')
+        num_secs_listed = pd.read_excel(fname)
+
+    supple_dates = [x for x in dts if x not in num_secs_listed.index]
+    if supple_dates:
+        print('adding num_secs_listed...')
+        df = all_instruments(types=types).set_index('order_book_id')  # dataframe
+        for t in supple_dates:
+            num_secs_listed.loc[t] = len(df[(df['listed_date'] <= t) & (df['de_listed_date'] >= t)])
+        num_secs_listed.to_excel(fname)
+        print('writting num_secs_listed.xlsx')
+    #return a series: index is dtime,value is number of secs listed
+    return num_secs_listed['num_secs_listed'].loc[dts]
+
+
+def all_instruments(types=['CS'], dt=None,dt_fromat='%Y-%m-%d'):
+    """
+        获取某个国家市场的所有合约信息。使用者可以通过这一方法很快地对合约信息有一个快速了解，目前仅支持中国市场。
+
+        :param str types: list,需要查询合约类型，例如：type='CS'代表股票。默认是所有类型
+
+        :param date: 查询时间点
+        :type date: `str` | `datetime` | `date`
+
+
+        :return: `pandas DataFrame` 所有合约的基本信息。
+
+        其中type参数传入的合约类型和对应的解释如下：
+
+        =========================   ===================================================
+        合约类型                      说明
+        =========================   ===================================================
+        CS                          Common Stock, 即股票
+        ETF                         Exchange Traded Fund, 即交易所交易基金
+        LOF                         Listed Open-Ended Fund，即上市型开放式基金
+        FenjiMu                     Fenji Mu Fund, 即分级母基金
+        FenjiA                      Fenji A Fund, 即分级A类基金
+        FenjiB                      Fenji B Funds, 即分级B类基金
+        INDX                        Index, 即指数
+        Future                      Futures，即期货，包含股指、国债和商品期货
+        =========================   ===================================================
+
+        :example:
+
+        获取中国市场所有分级基金的基础信息:
+
+        ..  code-block:: python3
+            :linenos:
+
+            [In]all_instruments(['FenjiA'])
+            [Out]
+                abbrev_symbol    order_book_id    product    sector_code  symbol
+            0    CYGA    150303.XSHE    null    null    华安创业板50A
+            1    JY500A    150088.XSHE    null    null    金鹰500A
+            2    TD500A    150053.XSHE    null    null    泰达稳健
+            3    HS500A    150110.XSHE    null    null    华商500A
+            4    QSAJ    150235.XSHE    null    null    鹏华证券A
+            ...
+
+        """
+    if isinstance(dt,str):
+        dt=datetime.datetime.strptime(dt,'%Y-%m-%d') if len(dt)==10 else datetime.datetime.strptime(dt,'%Y%m%d')
+
+    result =  datasource.all_instruments(types=types,dt=dt)
+    df = pd.DataFrame([[i.order_book_id, i.symbol, i.type, i.listed_date, i.de_listed_date] for i in result],columns=['order_book_id', 'symbol', 'type', 'listed_date', 'de_listed_date'])
+
+    if isinstance(dt_fromat,str):
+        df['listed_date'] = df['listed_date'].apply(lambda x: x.strftime(dt_fromat))
+        df['de_listed_date'] = df['de_listed_date'].apply(lambda x: x.strftime(dt_fromat))
+
+    return df
 
 
 def get_bar(order_book_id, dt, frequency='1d'):
@@ -201,3 +286,6 @@ def get_bars(order_book_id,
                                adjust_type=adjust_type,
                                adjust_orig=adjust_orig,
                                convert_to_dataframe=convert_to_dataframe)
+
+if __name__ == '__main__':
+    s = get_num_secs_listed(['2009-09-01','2009-10-10','2018-07-07'])
