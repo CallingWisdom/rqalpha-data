@@ -39,7 +39,7 @@ class DataSource(DataProxy):
         # basic_system_log.debug('rqalpha data bundle date: ' + self._last_date_date.strftime('%Y-%m-%d'))
 
     def get_data_last_date(self):
-        """返回最新数据日期"""
+        """返回最新数据日期, e.g.: datetime.date(2018, 7, 6)"""
         if self._last_date_date is not None:
             return self._last_date_date
 
@@ -124,7 +124,7 @@ class DataSource(DataProxy):
                  adjust_orig=None,
                  convert_to_dataframe=False):
         order_book_id = to_order_book_id(order_book_id)
-        dt = to_date_object(dt)
+        dt = to_date_object(dt) #TODO if we want minute bar?
 
         if fields is None:
             fields = ['datetime', 'open', 'high', 'low', 'close', 'volume', 'total_turnover']
@@ -144,9 +144,10 @@ class DataSource(DataProxy):
                 df['datetime'] = df['datetime'].map(lambda x: convert_int_to_datetime(x))
                 df.set_index('datetime', inplace=True)
                 df.index.name = ''
+            # df.index[0] is like: Timestamp('2005-01-04 00:00:00'),type is pandas._libs.tslib.Timestamp
             return df
 
-        return bars
+        return bars # type(bars): numpy.ndarray
 
 
 datasource = DataSource()
@@ -287,5 +288,31 @@ def get_bars(order_book_id,
                                adjust_orig=adjust_orig,
                                convert_to_dataframe=convert_to_dataframe)
 
+def peroid_bars(order_book_id, start_time=None, end_time=None, frequency='1d',
+                fields=['datetime','close'],
+             skip_suspended=False,include_now=False,
+             adjust_type='post', adjust_orig=None,
+             convert_to_dataframe=True):
+    # rqalpha data start from 2005-01-04, compared to wind data, rqalpha data is rounded to 2 digits. Wind data is rounded to 4 digits
+    # adjust_type: 复权类型，默认为前复权 pre；可选 pre, none, post
+    # start_time,end_time: str, e.g. '2018-01-01','20180101','2018/01/01', both ends are included
+
+    bar_count = 365*1000 # TODO when frequency='1m'
+    dt = end_time if end_time else datetime.datetime.now()
+    df = datasource.get_bars(order_book_id=order_book_id,
+                               bar_count=bar_count, dt=dt,frequency=frequency,
+                               fields=fields,
+                               skip_suspended=skip_suspended, include_now=include_now,
+                               adjust_type=adjust_type, adjust_orig=adjust_orig,
+                               convert_to_dataframe=convert_to_dataframe)
+    # df.index[0] is like: Timestamp('2005-01-04 00:00:00'),type is pandas._libs.tslib.Timestamp
+    if end_time:
+        df = df[df.index<=pd.to_datetime(end_time)]
+    if start_time:
+        df = df[df.index>=pd.to_datetime(start_time)]
+    return df
+
 if __name__ == '__main__':
-    s = get_num_secs_listed(['2009-09-01','2009-10-10','2018-07-07'])
+    # s = get_num_secs_listed(['2009-09-01','2009-10-10','2018-07-07'])
+
+    dfx1 = peroid_bars('000852.XSHG',start_time='2018-01-01',end_time='2018-07-04')
