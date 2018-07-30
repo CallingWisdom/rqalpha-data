@@ -17,13 +17,17 @@ def to_order_book_id(stocks):
     if len(stock) == 11:
         return stock
 
-    c = stock[:1]
-    if c == '0' or c == '3':
-        return stock + '.XSHE'
-    elif c == '6':
-        return stock + '.XSHG'
-    else:
-        raise NameError(stock)
+    if '.' not in stock:
+        c = stock[:1]
+        if c == '0' or c == '3':
+            return stock + '.XSHE'
+        elif c == '6':
+            return stock + '.XSHG'
+        else:
+            raise NameError(stock)
+    elif stock.endswith('.SH') or stock.endswith('.SZ'):
+        tmp = {'.SH':'.XSHG','.SZ':'.XSHE'}
+        return stock[:6]+tmp[stock[6:]]
 
 
 def to_pure_code(order_book_id):
