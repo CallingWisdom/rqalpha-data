@@ -2,6 +2,7 @@
 
 import datetime
 import numpy as np
+import pandas as pd
 
 
 def to_date_object(date):
@@ -120,3 +121,11 @@ def to_datetime_str(dt):
     :return:
     """
     return to_datetime_str_fmt(dt, '%Y-%m-%d %H:%M:%S')
+
+
+def dtime_to_int(s):
+    # s: '2018-01-02 00:00:00'
+    # return 20180102
+    if isinstance(s,pd._libs.tslib.Timestamp):
+        s = str(s)
+    return int(s[:4]+s[5:7]+s[8:10])
