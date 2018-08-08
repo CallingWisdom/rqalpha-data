@@ -156,7 +156,7 @@ def available_data_range(frequency='1d'):
     return datasource.available_data_range(frequency)
 
 def get_trading_dates(start_date, end_date):
-    return datasource.get_trading_dates(start_date, end_date)
+    return datasource.get_trading_dates(start_date, end_date) # returned type is pandas.core.indexes.datetimes.DatetimeIndex,e.g. DatetimeIndex(['2009-01-05', '2009-01-06', '2009-01-07', '2009-01-08'], dtype='datetime64[ns]', freq=None)
 
 def get_next_trading_date(date, n=1):
     return datasource.get_next_trading_date(date, n)
@@ -184,7 +184,7 @@ def get_num_secs_listed(dts,types=['CS']):
     return num_secs_listed['num_secs_listed'].loc[dts]
 
 
-def all_instruments(types=['CS'], dt=None,dt_fromat='%Y-%m-%d'):
+def all_instruments(types=['CS'], dt=None,dt_format='%Y-%m-%d'):
     """
         获取某个国家市场的所有合约信息。使用者可以通过这一方法很快地对合约信息有一个快速了解，目前仅支持中国市场。
 
@@ -235,9 +235,9 @@ def all_instruments(types=['CS'], dt=None,dt_fromat='%Y-%m-%d'):
     result =  datasource.all_instruments(types=types,dt=dt)
     df = pd.DataFrame([[i.order_book_id, i.symbol, i.type, i.listed_date, i.de_listed_date] for i in result],columns=['order_book_id', 'symbol', 'type', 'listed_date', 'de_listed_date'])
 
-    if isinstance(dt_fromat,str):
-        df['listed_date'] = df['listed_date'].apply(lambda x: x.strftime(dt_fromat))
-        df['de_listed_date'] = df['de_listed_date'].apply(lambda x: x.strftime(dt_fromat))
+    if isinstance(dt_format,str):
+        df['listed_date'] = df['listed_date'].apply(lambda x: x.strftime(dt_format))
+        df['de_listed_date'] = df['de_listed_date'].apply(lambda x: x.strftime(dt_format))
 
     return df
 
