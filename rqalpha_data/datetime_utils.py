@@ -123,9 +123,15 @@ def to_datetime_str(dt):
     return to_datetime_str_fmt(dt, '%Y-%m-%d %H:%M:%S')
 
 
-def dtime_to_int(s):
+def dtimes_to_int(s):
     # s: '2018-01-02 00:00:00'
     # return 20180102
+    if isinstance(s, (list,tuple,set,pd.core.indexes.datetimes.DatetimeIndex)):
+        rs = []
+        for e in s:
+            rs.append(dtimes_to_int(e))
+        return rs
+
     if isinstance(s,pd._libs.tslib.Timestamp):
         s = str(s)
     return int(s[:4]+s[5:7]+s[8:10])
