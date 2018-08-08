@@ -47,3 +47,7 @@ def to_pure_code(order_book_id):
         return stock
 
     return stock[:6]
+
+def to_wind_code(order_book_ids):
+    tmp={'XSHE':'SZ','XSHG':'SH'}
+    return [e[:7]+tmp[e[7:]] for e in order_book_ids] if isinstance(order_book_ids,(list,tuple,set)) else order_book_ids[order_book_ids[:7]]+tmp[order_book_ids[7:]]
