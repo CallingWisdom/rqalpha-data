@@ -183,6 +183,8 @@ def get_num_secs_listed(dts,types=['CS']):
     #return a series: index is dtime,value is number of secs listed
     return num_secs_listed['num_secs_listed'].loc[dts]
 
+def instruments(order_book_id):
+    return datasource.instruments(order_book_id)
 
 def all_instruments(types=['CS'], dt=None,dt_format='%Y-%m-%d'):
     """
