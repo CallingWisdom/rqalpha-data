@@ -218,26 +218,14 @@ def get_bar(order_book_id, dt, frequency='1d'):
     return datasource.get_bar(order_book_id=order_book_id, dt=dt, frequency=frequency)
 
 
-def get_bars(order_book_id,
-             dt,
-             bar_count=1,
-             frequency='1d',
-             fields=None,
-             skip_suspended=True,
-             include_now=False,
-             adjust_type='pre',
-             adjust_orig=None,
-             convert_to_dataframe=False):
-    return datasource.get_bars(order_book_id=order_book_id,
-                               bar_count=bar_count,
-                               dt=dt,
-                               frequency=frequency,
-                               fields=fields,
-                               skip_suspended=skip_suspended,
-                               include_now=include_now,
-                               adjust_type=adjust_type,
-                               adjust_orig=adjust_orig,
-                               convert_to_dataframe=convert_to_dataframe)
+def get_bars(order_book_id, dt, bar_count=1, frequency='1d', fields=None, skip_suspended=True,include_now=False, adjust_type='pre', adjust_orig=None,convert_to_dataframe=False):
+    return datasource.get_bars(order_book_id=order_book_id, bar_count=bar_count,dt=dt,frequency=frequency,fields=fields,skip_suspended=skip_suspended,include_now=include_now,adjust_type=adjust_type,adjust_orig=adjust_orig,convert_to_dataframe=convert_to_dataframe)
+
+def bars_dic(secs, dt, bar_count=1, frequency='1d', fields=None, skip_suspended=True,include_now=False, adjust_type='pre', adjust_orig=None, convert_to_dataframe=False):
+    sec_dic = {}
+    for sec in secs:
+        sec_dic[sec] = datasource.get_bars(order_book_id=sec, bar_count=bar_count,dt=dt,frequency=frequency,fields=fields,skip_suspended=skip_suspended,include_now=include_now,adjust_type=adjust_type,adjust_orig=adjust_orig,convert_to_dataframe=convert_to_dataframe).reset_index().rename(columns={'':'datetime'})
+    return sec_dic
 
 def peroid_bars(order_book_id, start_time=None, end_time=None, frequency='1d',
                 fields=['datetime','close'],
