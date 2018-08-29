@@ -91,38 +91,8 @@ class DataSource(DataProxy):
         dt = to_date_object(dt)
         return super(DataSource, self).get_bar(order_book_id=order_book_id, dt=dt, frequency=frequency)
 
-    def history_bars(self,
-                     order_book_id,
-                     bar_count,
-                     frequency,
-                     field,
-                     dt,
-                     skip_suspended=True, include_now=False,
-                     adjust_type='pre', adjust_orig=None):
-        order_book_id = to_order_book_id(order_book_id)
-        dt = to_date_object(dt)
-        bars = super(DataSource, self).history_bars(order_book_id=order_book_id,
-                                                    bar_count=bar_count,
-                                                    frequency=frequency,
-                                                    field=field,
-                                                    dt=dt,
-                                                    skip_suspended=skip_suspended,
-                                                    include_now=include_now,
-                                                    adjust_type=adjust_type,
-                                                    adjust_orig=adjust_orig)
-        return bars
+    def get_bars(self,order_book_id, dt, bar_count=1,frequency='1d',fields=None,skip_suspended=True,include_now=False,adjust_type='pre',adjust_orig=None,convert_to_dataframe=False):
 
-    def get_bars(self,
-                 order_book_id,
-                 dt,
-                 bar_count=1,
-                 frequency='1d',
-                 fields=None,
-                 skip_suspended=True,
-                 include_now=False,
-                 adjust_type='pre',
-                 adjust_orig=None,
-                 convert_to_dataframe=False):
         order_book_id = to_order_book_id(order_book_id)
         dt = to_date_object(dt) #TODO if we want minute bar?
 
@@ -246,27 +216,6 @@ def all_instruments(types=['CS'], dt=None,dt_format='%Y-%m-%d'):
 
 def get_bar(order_book_id, dt, frequency='1d'):
     return datasource.get_bar(order_book_id=order_book_id, dt=dt, frequency=frequency)
-
-
-def history_bars(
-        order_book_id,
-        bar_count,
-        frequency,
-        field,
-        dt,
-        skip_suspended=True,
-        include_now=False,
-        adjust_type='pre',
-        adjust_orig=None):
-    return datasource.history_bars(order_book_id=order_book_id,
-                                   bar_count=bar_count,
-                                   frequency=frequency,
-                                   field=field,
-                                   dt=dt,
-                                   skip_suspended=skip_suspended,
-                                   include_now=include_now,
-                                   adjust_type=adjust_type,
-                                   adjust_orig=adjust_orig)
 
 
 def get_bars(order_book_id,
