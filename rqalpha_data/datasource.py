@@ -3,6 +3,7 @@
 import os
 import datetime
 import pandas as pd
+import numpy as np
 from rqalpha.data.data_proxy import DataProxy
 from rqalpha.utils.datetime_func import convert_int_to_datetime
 
@@ -91,7 +92,7 @@ class DataSource(DataProxy):
         dt = to_date_object(dt)
         return super(DataSource, self).get_bar(order_book_id=order_book_id, dt=dt, frequency=frequency)
 
-    def get_bars(self,order_book_id, dt, bar_count=1,frequency='1d',fields=None,skip_suspended=True,include_now=False,adjust_type='pre',adjust_orig=None,convert_to_dataframe=False):
+    def get_bars(self,order_book_id, dt, bar_count=1,frequency='1d',fields=None,skip_suspended=True,include_now=False,adjust_type='pre',adjust_orig=None,convert_to_dataframe=False,time_format='datetime'):
 
         order_book_id = to_order_book_id(order_book_id)
         dt = to_date_object(dt) #TODO if we want minute bar?
@@ -111,9 +112,12 @@ class DataSource(DataProxy):
         if convert_to_dataframe:
             df = pd.DataFrame.from_dict(bars)
             if 'datetime' in df.columns:
-                df['datetime'] = df['datetime'].map(lambda x: convert_int_to_datetime(x))
+                if time_format=='datetime':
+                    df['datetime'] = df['datetime'].map(lambda x: convert_int_to_datetime(x))
+                if time_format=='int' and frequency=='1d':
+                    df['datetime'] = df['datetime'].map(lambda x: x/1000000)
                 df.set_index('datetime', inplace=True)
-                df.index.name = ''
+                # df.index.name = ''
             # df.index[0] is like: Timestamp('2005-01-04 00:00:00'),type is pandas._libs.tslib.Timestamp
             return df
 
@@ -204,27 +208,30 @@ def all_instruments(types=['CS'], dt=None,dt_format='%Y-%m-%d'):
     if isinstance(dt,str):
         dt=datetime.datetime.strptime(dt,'%Y-%m-%d') if len(dt)==10 else datetime.datetime.strptime(dt,'%Y%m%d')
 
-    result =  datasource.all_instruments(types=types,dt=dt)
-    df = pd.DataFrame([[i.order_book_id, i.symbol, i.type, i.listed_date, i.de_listed_date] for i in result],columns=['order_book_id', 'symbol', 'type', 'listed_date', 'de_listed_date'])
+    result =  datasource.all_instruments(types=types,dt=dt)#result is a list of rqalpha.model.instrument.Instrument object,
+    fields = ['order_book_id', 'symbol', 'board_type', 'sector_code_name', 'industry_name',  'status','special_type', 'listed_date', 'days_from_listed', 'de_listed_date','days_to_expire', 'abbrev_symbol', 'enum_type', 'exchange', 'industry_code', 'round_lot', 'sector_code', 'type','DEFAULT_DE_LISTED_DATE', 'DEFAULT_LISTED_DATE'] # fild 'listing' requires context.now to decide it is listing on context.now; 'concept_names' seems no longer exist
+
+    df = pd.DataFrame([[getattr(i,f,np.nan) for f in fields] for i in result],columns=fields)
 
     if isinstance(dt_format,str):
         df['listed_date'] = df['listed_date'].apply(lambda x: x.strftime(dt_format))
         df['de_listed_date'] = df['de_listed_date'].apply(lambda x: x.strftime(dt_format))
 
-    return df
+    return df,result
 
 
 def get_bar(order_book_id, dt, frequency='1d'):
     return datasource.get_bar(order_book_id=order_book_id, dt=dt, frequency=frequency)
 
 
-def get_bars(order_book_id, dt, bar_count=1, frequency='1d', fields=None, skip_suspended=True,include_now=False, adjust_type='pre', adjust_orig=None,convert_to_dataframe=False):
+def get_bars(order_book_id, dt, bar_count=1, frequency='1d', fields=None, skip_suspended=True,include_now=False, adjust_type='pre', adjust_orig=None,convert_to_dataframe=True):
     return datasource.get_bars(order_book_id=order_book_id, bar_count=bar_count,dt=dt,frequency=frequency,fields=fields,skip_suspended=skip_suspended,include_now=include_now,adjust_type=adjust_type,adjust_orig=adjust_orig,convert_to_dataframe=convert_to_dataframe)
 
-def bars_dic(secs, dt, bar_count=1, frequency='1d', fields=None, skip_suspended=True,include_now=False, adjust_type='pre', adjust_orig=None, convert_to_dataframe=False):
+def bars_dic(secs, dt, bar_count=1, frequency='1d', fields=None, skip_suspended=True,include_now=False, adjust_type='pre', adjust_orig=None, convert_to_dataframe=True,time_format='datetime'):
     sec_dic = {}
     for sec in secs:
-        sec_dic[sec] = datasource.get_bars(order_book_id=sec, bar_count=bar_count,dt=dt,frequency=frequency,fields=fields,skip_suspended=skip_suspended,include_now=include_now,adjust_type=adjust_type,adjust_orig=adjust_orig,convert_to_dataframe=convert_to_dataframe).reset_index().rename(columns={'':'datetime'})
+        sec_dic[sec] = datasource.get_bars(order_book_id=sec, bar_count=bar_count,dt=dt,frequency=frequency,fields=fields,skip_suspended=skip_suspended,include_now=include_now,adjust_type=adjust_type,adjust_orig=adjust_orig,convert_to_dataframe=convert_to_dataframe,time_format=time_format)
+    sec_dic = {k: v for k, v in sec_dic.items() if len(v)}# drop empty dataframes
     return sec_dic
 
 def peroid_bars(order_book_id, start_time=None, end_time=None, frequency='1d',
